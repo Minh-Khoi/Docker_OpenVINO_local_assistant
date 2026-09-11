@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  openvino-model-server:
+    image: openvino/model_server:latest-gpu
+    container_name: openvino_model_server
+    
+    # Matches --user $(id -u):$(id -g)
+    # Reads UID and GID from your host environment
+    user: "${UID:-1000}:${GID:-1000}"
+    
+    # Matches --device /dev/dri
+    devices:
+      - /dev/dri:/dev/dri
+      
+    # Matches --group-add=$(stat -c "%g" /dev/dri/render* | head -n 1)
+    # Pass the GID of the render group dynamically or explicitly
+    group_add:
+      - "${RENDER_GID:-109}"
+      
+    # Matches -p 7000:7000
+    ports:
+      - "7000:7000"
+      
+    # Matches -v $(pwd)/models:/models:rw
+    volumes:
+      - ./models:/models:rw
+      
+    # Matches the CLI command arguments
+    command: >
+      --source_model OpenVINO/Phi-3.5-mini-instruct-int4-ov
+      --model_repository_path models
+      --task text_generation
+      --rest_port 7000
+      --target_device GPU
+      --cache_size 2
